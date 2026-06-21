@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Library Inventory System</title>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<style>
+
+body{
+    margin:0;
+    padding:30px;
+    font-family:'Inter',Segoe UI,sans-serif;
+    background:
+    radial-gradient(circle at top left,#1f1147,#09061b 60%);
+    color:white;
+}
+
+.header{
+    background:rgba(15,23,42,.65);
+    backdrop-filter:blur(20px);
+    border:1px solid rgba(59,130,246,.4);
+    border-radius:30px;
+    padding:30px;
+    margin-bottom:30px;
+    box-shadow:
+    0 0 30px rgba(59,130,246,.15),
+    inset 0 0 20px rgba(255,255,255,.03);
+}
+
+h1{
+    font-size:52px;
+    font-weight:800;
+    margin-bottom:25px;
+    color:white;
+}
+
+button{
+    background:linear-gradient(
+        135deg,
+        #2563eb 0%,
+        #7c3aed 50%,
+        #ec4899 100%
+    );
+
+    border:none;
+    color:white;
+    padding:14px 22px;
+    border-radius:16px;
+    font-weight:700;
+    cursor:pointer;
+    transition:.25s;
+    margin-right:10px;
+    margin-bottom:10px;
+
+    box-shadow:
+    0 8px 25px rgba(124,58,237,.35);
+}
+
+button:hover{
+    transform:translateY(-3px);
+
+    box-shadow:
+    0 12px 35px rgba(236,72,153,.4);
+}
+
+.deleteBtn{
+    background:linear-gradient(
+        135deg,
+        #dc2626,
+        #ef4444
+    );
+}
+
+#searchBox{
+    width:420px;
+    max-width:100%;
+    padding:16px;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,.15);
+    background:rgba(255,255,255,.05);
+    backdrop-filter:blur(20px);
+    color:white;
+    font-size:15px;
+    margin-top:15px;
+}
+
+#searchBox::placeholder{
+    color:#94a3b8;
+}
+
+#status{
+    margin-top:18px;
+    color:#cbd5e1;
+    font-weight:600;
+}
+
+#dashboard{
+    display:grid;
+    grid-template-columns:
+    repeat(auto-fit,minmax(250px,1fr));
+    gap:25px;
+    margin-bottom:30px;
+}
+
+.statCard{
+    background:rgba(15,23,42,.65);
+    backdrop-filter:blur(20px);
+    border:1px solid rgba(59,130,246,.25);
+    border-radius:28px;
+    padding:30px;
+    box-shadow:
+    0 0 25px rgba(59,130,246,.12);
+}
+
+.statLabel{
+    color:#94a3b8;
+    text-transform:uppercase;
+    letter-spacing:2px;
+    font-size:12px;
+}
+
+.statValue{
+    font-size:64px;
+    font-weight:800;
+    margin-top:10px;
+    color:white;
+}
+
+#barcodeList{
+    display:grid;
+    grid-template-columns:
+    repeat(auto-fill,minmax(350px,1fr));
+    gap:25px;
+}
+
+.barcodeCard{
+    background:rgba(15,23,42,.65);
+    backdrop-filter:blur(20px);
+    border:1px solid rgba(59,130,246,.2);
+    border-radius:28px;
+    padding:25px;
+    transition:.25s;
+    box-shadow:
+    0 0 25px rgba(59,130,246,.08);
+}
+
+.barcodeCard:hover{
+    transform:translateY(-6px);
+    box-shadow:
+    0 0 30px rgba(124,58,237,.25);
+}
+
+.barcodeCard svg{
+    width:100%;
+    margin:20px 0;
+    background:white;
+    border-radius:12px;
+    padding:12px;
+}
+
+.bookTitle{
+    color:white;
+    font-size:22px;
+    font-weight:700;
+    line-height:1.4;
+    margin-top:15px;
+}
+
+.copyCheckbox{
+    width:20px;
+    height:20px;
+    accent-color:#7c3aed;
+}
+
+@media(max-width:768px){
+
+    body{
+        padding:15px;
+    }
+
+    h1{
+        font-size:34px;
+    }
+
+    #barcodeList{
+        grid-template-columns:1fr;
+    }
+
+}
+
+/* ADD THIS BELOW */
+
+@media print{
+
+    .header{
+        display:none;
+    }
+
+    #dashboard{
+        display:none !important;
+    }
+
+    #barcodeList{
+        display:grid;
+        grid-template-columns:repeat(3,1fr);
+        gap:8px;
+    }
+
+    .barcodeCard{
+        padding:8px;
+        border:1px solid #ccc;
+        border-radius:8px;
+        box-shadow:none;
+        break-inside:avoid;
+    }
+
+    .barcodeCard svg{
+    height:70px !important;
+    padding:4px;
+    margin:6px 0;
+}
+
+    .bookTitle{
+        font-size:10px;
+        margin-top:4px;
+    }
+
+    .copyCheckbox,
+    .deleteBtn{
+        display:none;
+    }
+   .deleteBtn{
+    display:none !important;
+    }
+
+}
+
+</style>
+
+</head>
+<body>
+<div class="header">
+
+<h1>📚 Library Management System</h1>
+
+<button onclick="generateMissingCopies()">
+Generate Missing Copies
+</button>
+
+<button onclick="viewBarcodes()">
+View All Barcodes
+</button>
+
+<button onclick="deleteSelectedCopies()">
+Delete Selected
+</button>
+
+<button onclick="selectAllCopies()">
+Select All
+</button>
+
+<button onclick="clearSelection()">
+Clear Selection
+</button>
+
+<button onclick="window.print()">
+Print Barcodes
+</button>
+
+<button onclick="exportInventory()">
+Export CSV
+</button>
+
+<input
+    id="searchBox"
+    type="text"
+    placeholder="🔍 Search books, ISBN, Book ID..."
+    style="
+        width:300px;
+        padding:10px;
+        border-radius:8px;
+        border:1px solid #ccc;
+        margin-top:15px;
+    "
+>
+
+
+<div id="status"></div>
+</div>
+
+<div id="dashboard" style="
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:15px;
+margin-bottom:20px;
+">
+</div>
+
+<div id="barcodeList"></div>
+
+<script>
+
+let booksCache = [];
+let copiesCache = [];
+
+
+const BASE_ID = "appswjIza3rYy68a1";
+
+const BOOKS_TABLE = "Books";
+const COPIES_TABLE = "Book Copies";
+
+async function getAllRecords(table){
+
+    const res = await fetch(
+        `/api/airtable?table=${encodeURIComponent(table)}`
+    );
+
+    const data = await res.json();
+
+    return data.records || [];
+}
+
+async function preloadData(){
+
+    document.getElementById("status").innerText =
+        "Loading library...";
+
+    const [books, copies] =
+        await Promise.all([
+            getAllRecords(BOOKS_TABLE),
+            getAllRecords(COPIES_TABLE)
+        ]);
+
+    booksCache = books;
+    copiesCache = copies;
+
+    console.log("Books Loaded:", booksCache.length);
+    console.log("Copies Loaded:", copiesCache.length);
+    console.log(copiesCache);
+
+    document.getElementById("status").innerText =
+        `Library ready (${copies.length} copies)`;
+}
+
+async function createCopy(fields){
+
+    const res = await fetch(
+        `/api/airtable?table=${encodeURIComponent(COPIES_TABLE)}`,
+        {
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+                fields:fields
+            })
+        }
+    );
+
+    return await res.json();
+}
+
+function createBarcodeCard(bookId, title, recordId){
+    
+    const card = document.createElement("div");
+    card.className = "barcodeCard";
+const checkbox = document.createElement("input");
+
+checkbox.type = "checkbox";
+checkbox.className = "copyCheckbox";
+checkbox.dataset.recordId = recordId;
+
+card.appendChild(checkbox);
+
+    const svg = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "svg"
+    );
+
+    const id =
+        "barcode_" +
+        Math.random().toString(36).substring(2);
+
+    svg.id = id;
+
+    const titleDiv = document.createElement("div");
+    titleDiv.className = "bookTitle";
+    titleDiv.textContent = title;
+
+    card.appendChild(svg);
+    card.appendChild(titleDiv);
+
+    document
+        .getElementById("barcodeList")
+        .appendChild(card);
+
+   const deleteBtn =
+document.createElement("button");
+
+deleteBtn.className = "deleteBtn";
+deleteBtn.textContent = "Delete";
+
+deleteBtn.onclick = () =>
+    deleteCopy(recordId);
+
+card.appendChild(deleteBtn);
+
+     JsBarcode("#" + id, bookId, {
+    format:"CODE128",
+    displayValue:true,
+    height:70,
+    width:2.5,
+    margin:10,
+    fontSize:14
+});
+}
+
+async function deleteCopy(recordId){
+
+    if(!confirm("Delete this copy?")){
+        return;
+    }
+
+    try{
+
+        await fetch(
+            `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(COPIES_TABLE)}/${recordId}`,
+            {
+                method:"DELETE",
+                headers:{
+                    Authorization:`Bearer ${AIRTABLE_TOKEN}`
+                }
+            }
+        );
+
+      await preloadData();
+
+await loadDashboard();
+
+viewBarcodes();
+
+    }
+    catch(err){
+
+        console.error(err);
+
+        alert("Failed to delete copy");
+    }
+}
+
+async function deleteSelectedCopies(){
+
+    const selected =
+        document.querySelectorAll(
+            ".copyCheckbox:checked"
+        );
+
+    if(selected.length === 0){
+        alert("No barcodes selected");
+        return;
+    }
+
+    if(
+        !confirm(
+            `Delete ${selected.length} selected copies?`
+        )
+    ){
+        return;
+    }
+
+    try{
+
+        for(const item of selected){
+
+            await fetch(
+    `/api/airtable?table=${encodeURIComponent(COPIES_TABLE)}&id=${item.dataset.recordId}`,
+    {
+        method:"DELETE"
+    }
+);
+        }
+
+        alert(
+            `${selected.length} copies deleted`
+        );
+
+        await preloadData();
+
+await loadDashboard();
+
+viewBarcodes();
+
+    }
+    catch(err){
+
+        console.error(err);
+        alert("Delete failed");
+    }
+}
+
+function selectAllCopies(){
+
+    document
+        .querySelectorAll(".copyCheckbox")
+        .forEach(box => {
+
+            box.checked = true;
+
+        });
+}
+
+function clearSelection(){
+
+    document
+        .querySelectorAll(".copyCheckbox")
+        .forEach(box => {
+
+            box.checked = false;
+
+        });
+}
+
+async function loadDashboard(){
+
+    const books = booksCache;
+    const copies = copiesCache;
+
+    document.getElementById("dashboard").innerHTML = `
+    <div class="statCard">
+        <div class="statLabel">
+            Total Titles
+        </div>
+
+        <div class="statValue">
+            ${books.length}
+        </div>
+    </div>
+
+    <div class="statCard">
+        <div class="statLabel">
+            Total Copies
+        </div>
+
+        <div class="statValue">
+            ${copies.length}
+        </div>
+    </div>
+    `;
+}
+async function viewBarcodes(){
+
+    const status =
+        document.getElementById("status");
+
+    const list =
+        document.getElementById("barcodeList");
+
+    list.innerHTML = "";
+
+    status.innerText = "Loading barcodes...";
+
+    try{
+
+        const copies = [...copiesCache];
+
+console.log("Copies Cache:", copies);
+
+if(!copies || copies.length === 0){
+
+    status.innerText = "No barcodes found";
+
+    return;
+}
+
+copies.sort((a,b)=>{
+
+    const idA = a.fields["Book ID"] || "";
+    const idB = b.fields["Book ID"] || "";
+
+    return idA.localeCompare(idB);
+});
+
+copies.forEach(copy=>{
+
+    const f = copy.fields || {};
+
+    createBarcodeCard(
+        f["Book ID"] || "",
+        f["Title"] || "Untitled",
+        copy.id
+    );
+
+});
+
+status.innerText =
+    `${copies.length} barcodes loaded`;
+
+    }
+    catch(err){
+
+        console.error(err);
+
+        status.innerText =
+            "Error loading barcodes";
+    }
+}
+
+async function searchBarcodes(){
+
+    const term =
+        document.getElementById("searchBox")
+        .value
+        .toLowerCase()
+        .trim();
+
+    const list =
+        document.getElementById("barcodeList");
+
+    const status =
+        document.getElementById("status");
+
+    list.innerHTML = "";
+
+    if(!term){
+        status.innerText =
+            "Enter a search term";
+        return;
+    }
+
+    status.innerText =
+        "Searching...";
+
+    try{
+
+          const copies = copiesCache;
+        
+          const matches =
+            
+            copies.filter(copy=>{
+
+                const title =
+                    (copy.fields["Title"] || "")
+                    .toLowerCase();
+
+                const bookId =
+                    (copy.fields["Book ID"] || "")
+                    .toLowerCase();
+
+                return (
+                    title.includes(term) ||
+                    bookId.includes(term)
+                );
+            });
+
+        matches.forEach(copy=>{
+
+            createBarcodeCard(
+                copy.fields["Book ID"] || "",
+                copy.fields["Title"] || "Untitled",
+                copy.id
+            );
+
+        });
+
+        status.innerText =
+            `${matches.length} result(s) found`;
+
+    }
+    catch(err){
+
+        console.error(err);
+
+        status.innerText =
+            "Search failed";
+    }
+}
+
+async function exportInventory(){
+
+    try{
+
+        const copies = copiesCache;
+
+        let csv =
+            "Book ID,Title,ISBN13,ISBN10,Status\n";
+
+        copies.forEach(copy=>{
+
+            const f = copy.fields;
+
+            csv += `"${f["Book ID"] || ""}",`;
+            csv += `"${f["Title"] || ""}",`;
+            csv += `"${f["ISBN13"] || ""}",`;
+            csv += `"${f["ISBN10"] || ""}",`;
+            csv += `"${f["Status"] || ""}"\n`;
+
+        });
+
+        const blob =
+            new Blob(
+                [csv],
+                {type:"text/csv"}
+            );
+
+        const url =
+            URL.createObjectURL(blob);
+
+        const a =
+            document.createElement("a");
+
+        a.href = url;
+        a.download = "library_inventory.csv";
+
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        URL.revokeObjectURL(url);
+
+    }
+    catch(err){
+
+        console.error(err);
+
+        alert("Export failed");
+    }
+}
+
+async function generateMissingCopies(){
+
+    const status =
+        document.getElementById("status");
+
+    status.innerText = "Checking inventory...";
+
+    try{
+
+        const books =
+            await getAllRecords(BOOKS_TABLE);
+
+        console.log("BOOKS:", books);
+
+        const copies =
+            await getAllRecords(COPIES_TABLE);
+
+       console.log("COPIES:", copies);
+
+        const isbnCount = {};
+
+        let highestId = 0;
+
+        copies.forEach(copy=>{
+
+            const f = copy.fields;
+
+            const isbn13 =
+                f["ISBN13"] || "";
+
+            if(isbn13){
+
+                if(!isbnCount[isbn13]){
+                    isbnCount[isbn13] = 0;
+                }
+
+                isbnCount[isbn13]++;
+            }
+
+            const bookId =
+                f["Book ID"] || "";
+
+            const match =
+                bookId.match(/BK-(\d+)/);
+
+            if(match){
+
+                highestId =
+                    Math.max(
+                        highestId,
+                        Number(match[1])
+                    );
+            }
+        });
+
+        let created = 0;
+
+        for(const book of books){
+
+            const f = book.fields;
+
+            const title =
+                f["Title"] || "Untitled";
+
+            const isbn13 =
+                f["ISBN13"] || "";
+
+            const isbn10 =
+                f["ISBN10"] || "";
+
+            const quantity =
+                Number(
+                    f["Quantity"] || 0
+                );
+
+            const existing =
+                isbnCount[isbn13] || 0;
+
+            const missing =
+                quantity - existing;
+
+            if(missing <= 0){
+                continue;
+            }
+
+            for(let i=0;i<missing;i++){
+
+                highestId++;
+
+                const bookId =
+                    "BK-" +
+                    String(highestId)
+                    .padStart(8,"0");
+
+                await createCopy({
+
+                    "Book ID": bookId,
+                    "Title": title,
+                    "ISBN13": isbn13,
+                    "ISBN10": isbn10,
+                    "Status": "Available"
+
+                });
+
+                created++;
+            }
+        }
+
+        if(created === 0){
+
+    status.innerText =
+        "No books to create barcode";
+
+}else{
+
+    status.innerText =
+        `Created ${created} new copies`;
+
+}
+
+await preloadData();
+
+await loadDashboard();
+
+viewBarcodes();
+
+}
+catch(err){
+
+        console.error(err);
+
+        status.innerText =
+            "Error generating copies";
+    }
+}
+
+document
+.getElementById("searchBox")
+.addEventListener("input",()=>{
+
+    const term =
+        document
+        .getElementById("searchBox")
+        .value
+        .trim();
+
+    if(term === ""){
+
+        viewBarcodes();
+
+        return;
+    }
+
+    searchBarcodes();
+
+});
+
+document
+.getElementById("searchBox")
+.addEventListener("input", function(){
+
+    const value = this.value.trim();
+
+    if(value === ""){
+
+        viewBarcodes();
+
+        return;
+    }
+
+    searchBarcodes();
+
+});
+
+(async()=>{
+
+    await preloadData();
+
+    await loadDashboard();
+
+    viewBarcodes();
+
+})();
+
+</script>
+
+</body>
+</html>
